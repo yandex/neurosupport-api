@@ -6,14 +6,14 @@ from .exceptions import APIError, AuthenticationError
 class BaseClient(ABC):
     """
     Абстрактный базовый клиент, содержащий общую логику для запросов к API.
-    Механизм аутентификации и предоставление специфичных параметров (например, folder_id)
+    Механизм аутентификации и предоставление специфичных параметров
     должны быть реализованы в дочерних классах.
     """
     def __init__(
         self,
         service: str,
         product: str,
-        base_url: str = "https://supportgpt.api.cloud.yandex.net"
+        base_url: str = "https://supportgpt.yandex.ru"
     ):
         """
         Инициализирует клиент API.
@@ -21,7 +21,7 @@ class BaseClient(ABC):
         Args:
             service: Идентификатор сервиса. Выдается после обработки заявки на подключение (обязательный).
             product: Идентификатор продукта. Выдается после обработки заявки на подключение(обязательный).
-            base_url: Базовый URL API (по умолчанию "https://supportgpt.api.cloud.yandex.net").
+            base_url: Базовый URL API (по умолчанию "https://supportgpt.yandex.ru", обязательный).
 
         Raises:
             TypeError: Если обязательные параметры не переданы.
@@ -66,7 +66,7 @@ class BaseClient(ABC):
         APIError: При ошибке HTTP запроса.
         """
         endpoint = '/indexer/v1/indexes'
-        headers = {'x-folder-id': self.folder_id}
+        headers = {}
         try:
             self._request(method='GET', endpoint=endpoint, headers=headers)
             return True
@@ -86,7 +86,7 @@ class BaseClient(ABC):
         Создание индекса или обновление существующего.
 
         Args:
-            index_name: Строковое имя индекса (обязательное). Обязано содержать переданый префикс, после обработки заявки на подключение.
+            index_name: Строковое имя индекса (обязательное). Обязано содержать переданный префикс, после обработки заявки на подключение.
             documents: Список документов для индексации.
             meta: Метаинформация об индексе.
             auto_switch: Флаг автоматического переключения на новый индекс после создания.
@@ -366,39 +366,35 @@ class BaseClient(ABC):
         return self._request(method='DELETE', endpoint=endpoint, json=body)
 
 
-class YandexCloudNeuroSupportClient(BaseClient):
+class NeuroSupportClient(BaseClient):
     """
-    Клиент для работы с API через аутентификацию Yandex.Cloud.
-    Использует Bearer IAM-токен и folder_id.
+    Клиент для работы с API.
     """
     def __init__(
         self,
         auth_token: str,
-        folder_id: str,
         service: str,
         product: str,
-        base_url: str = "https://supportgpt.api.cloud.yandex.net"
+        base_url: str = "https://supportgpt.yandex.ru"
     ):
         """
-        Инициализирует клиент API для NeuroSupport в Yandex.Cloud.
+        Инициализирует клиент API для NeuroSupport.
 
         Args:
-            auth_token: IAM-токен авторизации для аутентификации в Yandex.Cloud.
-            folder_id: Идентификатор каталога в Yandex.Cloud.
+            auth_token: OAuth-токен авторизации (обязательный).
             service: Идентификатор сервиса. Выдается после обработки заявки на подключение (обязательный).
             product: Идентификатор продукта. Выдается после обработки заявки на подключение (обязательный).
-            base_url: Базовый URL API.
+            base_url: Базовый URL API (обязательный).
         """
-        if not auth_token or not folder_id:
-            raise AuthenticationError("`auth_token` и `folder_id` являются обязательными.")
+        if not auth_token:
+            raise AuthenticationError("`auth_token` является обязательным.")
 
         self.auth_token = auth_token
-        self.folder_id = folder_id
 
         super().__init__(service=service, product=product, base_url=base_url)
 
     def _configure_auth(self):
         """
-        Реализует настройку аутентификации с помощью Bearer IAM-токена.
+        Реализует настройку аутентификации с помощью OAuth токена.
         """
-        self.session.headers.update({'Authorization': f'Bearer {self.auth_token}'})
+        self.session.headers.update({'Authorization': f'OAuth {self.auth_token}'})
