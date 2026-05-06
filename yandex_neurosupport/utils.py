@@ -3,10 +3,6 @@ import subprocess
 from typing import Optional, Union, List, Dict, Any
 
 
-def get_folder_id(folder_id: str) -> str:
-    """Получает folder ID"""
-    return folder_id
-
 def get_service(service: str) -> str:
     """Получает service. Выдается после обработки заявки на подключение"""
     return service
@@ -18,19 +14,6 @@ def get_product(product: str) -> str:
 def get_index_name(index: str) -> str:
     """Получает prefix index. Выдается после обработки заявки на подключение"""
     return index
-
-def get_iam_token() -> Optional[str]:
-    """Получает IAM-токен через yc CLI."""
-    try:
-        result = subprocess.run(['yc', 'iam', 'create-token'],
-                                capture_output=True, text=True, check=True)
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        print(f"Ошибка при получении IAM-токена: {e}")
-        return None
-    except FileNotFoundError:
-        print("Команда 'yc' не найдена. Убедитесь, что Yandex Cloud CLI установлен.")
-        return None
 
 def mask_response_fields(
     data: Union[Dict, List, Any],
